@@ -115,5 +115,5 @@ ircStmt = toFromMsgPriv PRIVMSG <|>
           serverMsg <|>
           authNotice
 
-parseIrcMsg msg = parse ircStmt "IRC" msg
+parseIrcMsg = parse ircStmt "IRC"
 
