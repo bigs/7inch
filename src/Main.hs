@@ -10,13 +10,6 @@ import Control.Concurrent
 import Data.List (isPrefixOf)
 import Text.Regex.Posix
 
-loop :: IO ()
-loop = do
-  putStrLn "Line:"
-  line <- getLine
-  putStrLn $ show $ parseIrcMsg line
-  loop
-
 initSocket :: String -> String -> IO (Handle)
 initSocket server port = do
   -- Gather address info
