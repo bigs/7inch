@@ -24,4 +24,7 @@ executable 7inch
   main-is:             Main.hs
   -- other-modules:       
   build-depends:       base ==4.5.*
+  build-depends:       network
   build-depends:       7inch
+  build-depends:       mtl
+  build-depends:       regex-posix

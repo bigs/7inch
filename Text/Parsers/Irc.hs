@@ -1,18 +1,11 @@
-module Text.Parsers.IRC (Command, IrcMsg, IrcUser, parseIrcMsg) where
+module Text.Parsers.IRC where
 
 import Text.ParserCombinators.Parsec
 
-data Command = PRIVMSG | USER | NICK | JOIN | PART | TOPIC | NOTICE deriving (Show, Eq)
+data Command = PRIVMSG | USER | NICK | JOIN | PART | TOPIC | NOTICE | PING deriving (Show, Eq)
 
 commandToString :: Command -> String
-commandToString c = case c of
-  PRIVMSG -> "PRIVMSG"
-  USER    -> "USER"
-  NICK    -> "NICK"
-  JOIN    -> "JOIN"
-  PART    -> "PART"
-  TOPIC   -> "TOPIC"
-  NOTICE  -> "NOTICE"
+commandToString c = show c
 
 -- Irc User struct   : Nick   Ident  Host
 data IrcUser = IrcUser String String String deriving (Show, Eq)
@@ -21,11 +14,15 @@ data Channel = Channel String deriving (Show, Eq)
 userToString :: IrcUser -> String
 userToString (IrcUser n i h) = n ++ "!" ++ i ++ "@" ++ h
 
+channelToString :: Channel -> String
+channelToString (Channel c) = "#" ++ c
+
 data IrcMsg =
   PrivMsg Command IrcUser IrcUser String |
   PubMsg Command IrcUser Channel String |
   JoinPartMsg Command IrcUser String |
   ServerMsg String Int String String |
+  PingMsg String |
   AuthNotice String
   deriving (Show)
 
@@ -87,6 +84,14 @@ serverMsg = try $ do
   let codeNum = read code :: Int
   return $ ServerMsg server codeNum user msg
 
+pingMsg :: Parser IrcMsg
+pingMsg = try $ do
+  commandString PING
+  space
+  char ':'
+  ping <- many anyChar 
+  return $ PingMsg ping
+
 authNotice :: Parser IrcMsg
 authNotice = try $ do
   commandString NOTICE
@@ -113,6 +118,7 @@ ircStmt = toFromMsgPriv PRIVMSG <|>
           joinPartMsg JOIN <|>
           joinPartMsg PART <|>
           serverMsg <|>
+          pingMsg <|>
           authNotice
 
 parseIrcMsg = parse ircStmt "IRC"
