@@ -74,15 +74,14 @@ dispatchCommand h msg = do
 socketHandler :: Handle -> IO ()
 socketHandler h = do
   dead <- hIsEOF h
-  if dead then putStrLn "Quitting..."
-    else do
-      line <- hGetLine h
-      let stripped = take (length line - 1) line
-      let msg = parseIrcMsg stripped
-      case msg of
-        Left e -> putStrLn stripped >> socketHandler h
-        Right (PingMsg ping) -> respondToPing h ping >> socketHandler h
-        Right ircMsg -> dispatchCommand h ircMsg
+  if dead then putStrLn "Quitting..." else do
+    line <- hGetLine h
+    let stripped = take (length line - 1) line
+    let msg = parseIrcMsg stripped
+    case msg of
+      Left e -> putStrLn (show e) >> putStrLn stripped >> socketHandler h
+      Right (PingMsg ping) -> respondToPing h ping >> socketHandler h
+      Right ircMsg -> dispatchCommand h ircMsg
 
 initializeIrc :: Handle -> IO ()
 initializeIrc h = do

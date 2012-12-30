@@ -2,10 +2,7 @@ module Text.Parsers.IRC where
 
 import Text.ParserCombinators.Parsec
 
-data Command = PRIVMSG | USER | NICK | JOIN | PART | TOPIC | NOTICE | PING deriving (Show, Eq)
-
-commandToString :: Command -> String
-commandToString c = show c
+data Command = PRIVMSG | USER | NICK | JOIN | PART | TOPIC | NOTICE | PING | ERROR deriving (Show, Eq)
 
 -- Irc User struct   : Nick   Ident  Host
 data IrcUser = IrcUser String String String deriving (Show, Eq)
@@ -20,23 +17,16 @@ channelToString (Channel c) = "#" ++ c
 data IrcMsg =
   PrivMsg Command IrcUser IrcUser String |
   PubMsg Command IrcUser Channel String |
-  JoinPartMsg Command IrcUser String |
+  JoinPartMsg Command IrcUser Channel |
   ServerMsg String Int String String |
   PingMsg String |
+  ErrorMsg String |
   AuthNotice String
   deriving (Show)
 
-msgString :: IrcMsg -> String
-msgString msg = msgString' msg ++ "\r\n"
-
-msgString' :: IrcMsg -> String
-msgString' msg = case msg of
-  PrivMsg t from to msg -> ":" ++ userToString from ++ " " ++ commandToString t ++ " " ++ userToString to ++ " :" ++ msg
-  JoinPartMsg t nick channel -> ":" ++ userToString nick ++ " " ++ commandToString t ++ " #" ++ channel
-
 commandString :: Command -> Parser Command
 commandString command = try $ do
-  string $ commandToString command
+  string $ show command
   return command
 
 userString :: Parser IrcUser
@@ -46,11 +36,20 @@ userString = try $ do
   host <- manyTill anyChar $ try space
   return $ IrcUser nick ident host
 
-channelString :: Parser Channel
-channelString = try $ do
+channelStringNonTerm :: Parser Channel
+channelStringNonTerm = try $ do
   char '#'
   chan <- manyTill (noneOf " ") $ try space
   return $ Channel chan
+
+channelStringTerm :: Parser Channel
+channelStringTerm = try $ do
+  char '#'
+  chan <- many (noneOf " ")
+  return $ Channel chan
+
+channelString :: Parser Channel
+channelString = channelStringNonTerm <|> channelStringTerm
 
 toFromMsgPriv :: Command -> Parser IrcMsg
 toFromMsgPriv command = try $ do
@@ -73,6 +72,12 @@ toFromMsgPub command = try $ do
   char ':'
   msg <- many anyChar
   return $ PubMsg command from to msg
+
+errorMsg :: Parser IrcMsg
+errorMsg = try $ do
+  string "ERROR :"
+  msg <- many anyChar
+  return $ ErrorMsg msg
 
 serverMsg :: Parser IrcMsg
 serverMsg = try $ do
@@ -106,8 +111,8 @@ joinPartMsg command = try $ do
   nick <- userString
   c <- commandString command 
   space
-  char '#'
-  channel <- many anyChar
+  char ':'
+  channel <- channelString
   return $ JoinPartMsg c nick channel
 
 ircStmt :: Parser IrcMsg
@@ -119,6 +124,7 @@ ircStmt = toFromMsgPriv PRIVMSG <|>
           joinPartMsg PART <|>
           serverMsg <|>
           pingMsg <|>
+          errorMsg <|>
           authNotice
 
 parseIrcMsg = parse ircStmt "IRC"
