@@ -2,7 +2,17 @@ module Text.Parsers.IRC where
 
 import Text.ParserCombinators.Parsec
 
-data Command = PRIVMSG | USER | NICK | JOIN | PART | TOPIC | NOTICE | PING | ERROR deriving (Show, Eq)
+data Command = PRIVMSG |
+               USER |
+               NICK |
+               JOIN |
+               PART |
+               TOPIC |
+               NOTICE |
+               PING |
+               ERROR |
+               KICK |
+               MODE deriving (Show, Eq)
 
 -- Irc User struct   : Nick   Ident  Host
 data IrcUser = IrcUser String String String deriving (Show, Eq)
@@ -21,7 +31,10 @@ data IrcMsg =
   ServerMsg String Int String String |
   PingMsg String |
   ErrorMsg String |
-  AuthNotice String
+  AuthNoticeMsg String |
+  ModeMsg IrcUser Channel String [String] |
+  KickMsg IrcUser Channel String String |
+  TopicMsg IrcUser Channel String
   deriving (Show)
 
 commandString :: Command -> Parser Command
@@ -73,11 +86,46 @@ toFromMsgPub command = try $ do
   msg <- many anyChar
   return $ PubMsg command from to msg
 
+kickMsg :: Parser IrcMsg
+kickMsg = try $ do
+  char ':'
+  user <- userString
+  commandString KICK
+  space
+  chan <- channelString
+  kicked <- manyTill anyChar $ try space
+  char ':'
+  msg <- many anyChar
+  return $ KickMsg user chan kicked msg
+
+topicMsg :: Parser IrcMsg
+topicMsg = try $ do
+  char ':'
+  user <- userString
+  commandString TOPIC
+  space
+  chan <- channelString
+  char ':'
+  msg <- many anyChar
+  return $ TopicMsg user chan msg
+
 errorMsg :: Parser IrcMsg
 errorMsg = try $ do
   string "ERROR :"
   msg <- many anyChar
   return $ ErrorMsg msg
+
+modeMsg :: Parser IrcMsg
+modeMsg = try $ do
+  char ':'
+  user <- userString
+  commandString MODE
+  space
+  chan <- channelString
+  status <- manyTill anyChar $ try space
+  users <- many $ try $ manyTill anyChar $ try space
+  finalUser <- many anyChar
+  return $ ModeMsg user chan status (users ++ [finalUser])
 
 serverMsg :: Parser IrcMsg
 serverMsg = try $ do
@@ -103,7 +151,7 @@ authNotice = try $ do
   space
   string "AUTH :"
   msg <- many anyChar
-  return $ AuthNotice msg
+  return $ AuthNoticeMsg msg
 
 joinPartMsg :: Command -> Parser IrcMsg
 joinPartMsg command = try $ do
@@ -125,6 +173,9 @@ ircStmt = toFromMsgPriv PRIVMSG <|>
           serverMsg <|>
           pingMsg <|>
           errorMsg <|>
+          modeMsg <|>
+          kickMsg <|>
+          topicMsg <|>
           authNotice
 
 parseIrcMsg = parse ircStmt "IRC"
