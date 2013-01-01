@@ -10,6 +10,12 @@ import Control.Concurrent
 import Data.List (isPrefixOf)
 import Text.Regex.Posix
 
+-- Config stuff
+
+channels = ["#test", "#room"]
+botNick = "clbt"
+botUser = "clbt clbt clbt clbt"
+
 initSocket :: String -> String -> IO (Handle)
 initSocket server port = do
   -- Gather address info
@@ -26,9 +32,8 @@ initSocket server port = do
 respondToPing :: Handle -> String -> IO ()
 respondToPing h msg = do
   putStrLn "Responding to ping..."
-  hPutStr h $ "PONG :" ++ msg ++ "\r\n"
+  sendCmd h $ "PONG :" ++ msg
   hFlush h
-
 
 --PubMsg Command IrcUser Channel String
 
@@ -85,17 +90,20 @@ socketHandler h = do
 
 initializeIrc :: Handle -> IO ()
 initializeIrc h = do
-  hPutStr h "NICK clbt\r\n"
-  hPutStr h "USER colebot colebot colebot colebot\r\n"
+  sendCmd h $ "NICK " ++ botNick
+  sendCmd h $ "USER " ++ botUser
   hFlush h
-  waitForReady h joinChan
+  waitForReady h joinChans
 
-joinChan :: Handle -> IO ()
-joinChan h = do
-  sendCmd h "JOIN #test"
+joinChans :: Handle -> [String] -> IO ()
+joinChans h [c] = do
+  sendCmd h $ "JOIN " ++ c
   socketHandler h
+joinChans h (c:cs) = do
+  sendCmd h $ "JOIN " ++ c
+  joinChans h cs
 
-waitForReady :: Handle -> (Handle -> IO ()) -> IO ()
+waitForReady :: Handle -> (Handle -> [String] -> IO ()) -> IO ()
 waitForReady h cb = do
   dead <- hIsEOF h
   if dead then putStrLn "Quitting wait..." else do
@@ -103,7 +111,7 @@ waitForReady h cb = do
     let stripped = take (length line - 1) line
     let msg = parseIrcMsg stripped
     case msg of
-      Right (ServerMsg _ 376 _ _) -> cb h
+      Right (ServerMsg _ 376 _ _) -> cb h channels
       _ -> waitForReady h cb
   
 main :: IO ()
