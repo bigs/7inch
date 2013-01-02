@@ -31,4 +31,6 @@ executable 7inch
   build-depends:       network
   build-depends:       7inch
   build-depends:       mtl
+  build-depends:       stm
   build-depends:       regex-posix
+  build-depends:       random

@@ -10,6 +10,7 @@ import Data.List (isPrefixOf)
 import Text.Regex.Posix
 import Network.IRC.SevenInch
 import Modules.Default
+import Modules.CapsQuotes
 
 -- Config stuff
 channels = ["#test", "#room"]
@@ -23,5 +24,7 @@ main = do
   [server, port] <- getArgs
   putStrLn $ "Connecting to " ++ server ++ ":" ++ port
   h <- initSocket server port
-  initializeIrc h (botNick, botUser) channels commands
+  capsQuotes <- initializeCapsQuotes
+  let _commands = capsQuotes : commands
+  initializeIrc h (botNick, botUser) channels _commands
 
