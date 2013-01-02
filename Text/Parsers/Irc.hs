@@ -36,6 +36,7 @@ data IrcMsg =
   ErrorMsg String |
   AuthNoticeMsg String |
   ModeMsg IrcUser Channel String [String] |
+  ChanModeMsg IrcUser Channel String |
   KickMsg IrcUser Channel String String |
   TopicMsg IrcUser Channel String
   deriving (Show)
@@ -54,7 +55,7 @@ commandToString PONG [response] = "PONG :" ++ response
 commandToString QUIT [msg] = "QUIT :" ++ msg
 commandToString QUIT [] = "QUIT"
 commandToString KICK [room, user, reason] = "KICK " ++ room ++ " " ++ user ++ " :" ++ reason
-commandToString MODE (room:mode:users) = "MODE " ++ room ++ " " ++ mode ++ intercalate " " users
+commandToString MODE (room:mode:users) = "MODE " ++ room ++ " " ++ mode ++ " " ++ intercalate " " users
 commandToString _ _ = ""
 
 commandString :: Command -> Parser Command
@@ -147,6 +148,16 @@ modeMsg = try $ do
   finalUser <- many anyChar
   return $ ModeMsg user chan status (users ++ [finalUser])
 
+chanModeMsg :: Parser IrcMsg
+chanModeMsg = try $ do
+  char ':'
+  user <- userString
+  commandString MODE
+  space
+  chan <- channelString
+  status <- many anyChar
+  return $ ChanModeMsg user chan status
+
 serverMsg :: Parser IrcMsg
 serverMsg = try $ do
   char ':'
@@ -173,13 +184,22 @@ authNotice = try $ do
   msg <- many anyChar
   return $ AuthNoticeMsg msg
 
-joinPartMsg :: Command -> Parser IrcMsg
-joinPartMsg command = try $ do
+joinMsg :: Parser IrcMsg
+joinMsg = try $ do
   char ':'
   nick <- userString
-  c <- commandString command 
+  c <- commandString JOIN
   space
   char ':'
+  channel <- channelString
+  return $ JoinPartMsg c nick channel
+
+partMsg :: Parser IrcMsg
+partMsg = try $ do
+  char ':'
+  nick <- userString
+  c <- commandString JOIN
+  space
   channel <- channelString
   return $ JoinPartMsg c nick channel
 
@@ -188,12 +208,13 @@ ircStmt = toFromMsgPriv PRIVMSG <|>
           toFromMsgPriv NOTICE <|>
           toFromMsgPub PRIVMSG <|>
           toFromMsgPub NOTICE <|>
-          joinPartMsg JOIN <|>
-          joinPartMsg PART <|>
+          joinMsg <|>
+          partMsg <|>
           serverMsg <|>
           pingMsg <|>
           errorMsg <|>
           modeMsg <|>
+          chanModeMsg <|>
           kickMsg <|>
           topicMsg <|>
           authNotice

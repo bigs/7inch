@@ -16,7 +16,7 @@ channels = ["#test", "#room"]
 botNick = ["clbt"]
 botUser = ["clbt", "clbt", "clbt", "clbt"]
 
-commands = [(isEcho, echoHandler), (isQuit, quitHandler)]
+commands = [echoCommand, quitCommand, autoVoiceCommand]
   
 main :: IO ()
 main = do
