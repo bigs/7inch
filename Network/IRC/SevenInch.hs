@@ -37,7 +37,7 @@ sendCmd h c args = do
 
 -- Ping handler
 respondToPing :: Handle -> String -> IO ()
-respondToPing h msg = sendCmd h PING [msg] 
+respondToPing h msg = sendCmd h PONG [msg] 
 
 selectHandler :: IrcMsg ->
                  [MsgHandler] ->

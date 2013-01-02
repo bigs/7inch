@@ -11,6 +11,7 @@ data Command = PRIVMSG |
                TOPIC |
                NOTICE |
                PING |
+               PONG |
                ERROR |
                KICK |
                QUIT |
@@ -49,7 +50,7 @@ commandToString JOIN rooms = intercalate "\r\n" roomString
 commandToString PART rooms = intercalate "\r\n" roomString
   where roomString = ["PART " ++ r | r <- rooms]
 commandToString TOPIC [room, topic] = "TOPIC " ++ room ++ " :" ++ topic
-commandToString PING [response] = "PING :" ++ response
+commandToString PONG [response] = "PONG :" ++ response
 commandToString QUIT [msg] = "QUIT :" ++ msg
 commandToString QUIT [] = "QUIT"
 commandToString KICK [room, user, reason] = "KICK " ++ room ++ " " ++ user ++ " :" ++ reason

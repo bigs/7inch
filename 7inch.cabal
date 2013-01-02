@@ -24,6 +24,7 @@ library
 
 executable 7inch
   hs-source-dirs:      src
+  hs-source-dirs:      src/Modules
   main-is:             Main.hs
   -- other-modules:       
   build-depends:       base ==4.5.*
