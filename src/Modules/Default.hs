@@ -1,4 +1,4 @@
-module Modules.Default where
+module Modules.Default (echoCommand, quitCommand, autoVoiceCommand) where
 
 import Text.Parsers.IRC
 import Network.IRC.SevenInch
@@ -24,4 +24,17 @@ quitHandler :: Handle -> IrcMsg -> IO ()
 quitHandler h _ = do
   sendCmd h QUIT []
 
+echoCommand = (isEcho, echoHandler)
+quitCommand = (isQuit, quitHandler)
+
+isAutoVoice :: IrcMsg -> Bool
+isAutoVoice (JoinPartMsg JOIN _ _) = True
+isAutoVoice _ = False
+
+autoVoiceHandler :: Handle -> IrcMsg -> IO ()
+autoVoiceHandler h (JoinPartMsg _ (IrcUser nick _ _) room) = do
+  let roomStr = channelToString room
+  sendCmd h MODE [roomStr, "+v", nick]
+
+autoVoiceCommand = (isAutoVoice, autoVoiceHandler)
 
