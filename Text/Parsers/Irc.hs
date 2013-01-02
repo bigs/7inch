@@ -198,7 +198,7 @@ partMsg :: Parser IrcMsg
 partMsg = try $ do
   char ':'
   nick <- userString
-  c <- commandString JOIN
+  c <- commandString PART
   space
   channel <- channelString
   return $ JoinPartMsg c nick channel
