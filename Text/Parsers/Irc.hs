@@ -1,6 +1,7 @@
 module Text.Parsers.IRC where
 
 import Text.ParserCombinators.Parsec
+import Data.List (intercalate)
 
 data Command = PRIVMSG |
                USER |
@@ -12,6 +13,7 @@ data Command = PRIVMSG |
                PING |
                ERROR |
                KICK |
+               QUIT |
                MODE deriving (Show, Eq)
 
 -- Irc User struct   : Nick   Ident  Host
@@ -36,6 +38,23 @@ data IrcMsg =
   KickMsg IrcUser Channel String String |
   TopicMsg IrcUser Channel String
   deriving (Show)
+
+commandToString :: Command -> [String] -> String
+commandToString PRIVMSG [to, msg] = "PRIVMSG " ++ to ++ " :" ++ msg
+commandToString NOTICE [to, msg] = "NOTICE " ++ to ++ " :" ++ msg
+commandToString USER args = "USER " ++ (intercalate " " args)
+commandToString NICK [nick] = "NICK " ++ nick
+commandToString JOIN rooms = intercalate "\r\n" roomString
+  where roomString = ["JOIN " ++ r | r <- rooms]
+commandToString PART rooms = intercalate "\r\n" roomString
+  where roomString = ["PART " ++ r | r <- rooms]
+commandToString TOPIC [room, topic] = "TOPIC " ++ room ++ " :" ++ topic
+commandToString PING [response] = "PING :" ++ response
+commandToString QUIT [msg] = "QUIT :" ++ msg
+commandToString QUIT [] = "QUIT"
+commandToString KICK [room, user, reason] = "KICK " ++ room ++ " " ++ user ++ " :" ++ reason
+commandToString MODE (room:mode:users) = "MODE " ++ room ++ " " ++ mode ++ intercalate " " users
+commandToString _ _ = ""
 
 commandString :: Command -> Parser Command
 commandString command = try $ do
