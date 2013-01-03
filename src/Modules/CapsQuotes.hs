@@ -28,6 +28,5 @@ newQuotes = newTVarIO ["THIS IS MY QUOTE"]
 initializeCapsQuotes :: IO (MsgHandler)
 initializeCapsQuotes = do
   quotes <- newQuotes
-  stdGen <- newStdGen
   return (isCapsQuotes, capsQuotesHandler quotes)
 
