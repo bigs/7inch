@@ -5,7 +5,7 @@ import Network.Socket
 import Network.BSD
 import System.IO
 import System.Environment
-import Control.Concurrent
+import System.Posix.Process
 import Data.List (isPrefixOf)
 import Text.Regex.Posix
 import Network.IRC.SevenInch
@@ -26,5 +26,6 @@ main = do
   h <- initSocket server port
   capsQuotes <- initializeCapsQuotes
   let _commands = capsQuotes : commands
-  initializeIrc h (botNick, botUser) channels _commands
+  pid <- forkProcess $ initializeIrc h (botNick, botUser) channels _commands
+  putStrLn $ "Forked in PID " ++ (show pid)
 
