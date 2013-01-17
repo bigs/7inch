@@ -37,8 +37,10 @@ data IrcMsg =
   AuthNoticeMsg String |
   ModeMsg IrcUser Channel String [String] |
   ChanModeMsg IrcUser Channel String |
+  ServerModeMsg String Channel String |
   KickMsg IrcUser Channel String String |
-  TopicMsg IrcUser Channel String
+  TopicMsg IrcUser Channel String |
+  QuitMsg IrcUser String
   deriving (Show)
 
 commandToString :: Command -> [String] -> String
@@ -107,6 +109,16 @@ toFromMsgPub command = try $ do
   msg <- many anyChar
   return $ PubMsg command from to msg
 
+quitMsg :: Parser IrcMsg
+quitMsg = try $ do
+  char ':'
+  user <- userString
+  commandString QUIT
+  space
+  char ':'
+  reason <- many anyChar
+  return $ QuitMsg user reason
+
 kickMsg :: Parser IrcMsg
 kickMsg = try $ do
   char ':'
@@ -157,6 +169,16 @@ chanModeMsg = try $ do
   chan <- channelString
   status <- many anyChar
   return $ ChanModeMsg user chan status
+
+serverModeMsg :: Parser IrcMsg
+serverModeMsg = try $ do
+  char ':'
+  server <- manyTill anyChar space
+  commandString MODE
+  space
+  chan <- channelString
+  status <- many anyChar
+  return $ ServerModeMsg server chan status
 
 serverMsg :: Parser IrcMsg
 serverMsg = try $ do
@@ -215,8 +237,10 @@ ircStmt = toFromMsgPriv PRIVMSG <|>
           errorMsg <|>
           modeMsg <|>
           chanModeMsg <|>
+          serverModeMsg <|>
           kickMsg <|>
           topicMsg <|>
+          quitMsg <|>
           authNotice
 
 parseIrcMsg = parse ircStmt "IRC"
