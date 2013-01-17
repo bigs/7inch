@@ -12,7 +12,9 @@ import Text.Regex.Posix
 -- Types
 -- ========================
 -- 
-type MsgHandler = ((IrcMsg -> Bool), (Handle -> IrcMsg -> IO ()))
+type MsgHandler = ((IrcMsg -> Bool), (Handle -> IrcMsg -> SocketHandler -> IO ()))
+
+type SocketHandler = IO ()
 
 -- Socket functions
 -- ========================
@@ -41,7 +43,7 @@ respondToPing h msg = sendCmd h PONG [msg]
 
 selectHandler :: IrcMsg ->
                  [MsgHandler] ->
-                 Maybe (Handle -> IrcMsg -> IO ())
+                 Maybe (Handle -> IrcMsg -> SocketHandler -> IO ())
 selectHandler _ [] = Nothing
 selectHandler msg ((f, g):xs) = if f msg then Just g else selectHandler msg xs
 
@@ -49,7 +51,7 @@ dispatchCommand :: Handle -> [MsgHandler] -> IrcMsg -> IO ()
 dispatchCommand h commands msg = do
   case selectHandler msg commands of
     Nothing -> socketHandler h commands
-    Just handler -> handler h msg >> socketHandler h commands
+    Just handler -> handler h msg $ socketHandler h commands
 
 socketHandler :: Handle -> [MsgHandler] -> IO ()
 socketHandler h commands = do
