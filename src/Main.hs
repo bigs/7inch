@@ -13,7 +13,7 @@ import Modules.Default
 import Modules.CapsQuotes
 
 -- Config stuff
-channels = ["#test", "#room"]
+channels = ["#room", "#test"]
 botNick = ["clbt"]
 botUser = ["clbt", "clbt", "clbt", "clbt"]
 server = "irc.faceroar.com"
@@ -26,8 +26,8 @@ main = do
   putStrLn $ "Connecting to " ++ server ++ ":" ++ port
   h <- initSocket server port
   capsQuotes <- initializeCapsQuotes
-  --let _commands = capsQuotes : commands
+  let _commands = capsQuotes : commands
   --pid <- forkProcess $ initializeIrc h (botNick, botUser) channels _commands
   --putStrLn $ "Forked in PID " ++ (show pid)
-  initializeIrc h (botNick, botUser) channels commands
+  initializeIrc h (botNick, botUser) channels _commands
 
