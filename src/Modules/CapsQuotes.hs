@@ -23,7 +23,7 @@ capsQuotesHandler quoteRef h (PubMsg _ _ c msg) = do
   sendCmd h PRIVMSG [channelToString c, response]
 
 newQuotes :: IO (TVar [String])
-newQuotes = newTVarIO ["THIS IS MY QUOTE"]
+newQuotes = newTVarIO ["ANGRY FISH"]
 
 initializeCapsQuotes :: IO (MsgHandler)
 initializeCapsQuotes = do
