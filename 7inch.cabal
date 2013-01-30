@@ -34,6 +34,7 @@ executable 7inch
   build-depends:       mtl
   build-depends:       stm
   build-depends:       regex-posix
+  build-depends:       regex-compat
   build-depends:       random
   build-depends:       aeson
   build-depends:       attoparsec

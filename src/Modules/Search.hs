@@ -17,6 +17,7 @@ import Network.Socket
 import System.IO
 import Network.BSD
 import Text.Regex.Posix ((=~))
+import Text.Regex
 
 import qualified Data.ByteString.Char8 as BS
 import qualified Data.Aeson.Types as T
@@ -93,19 +94,23 @@ lookupWord q = do
     _           -> return Nothing
 
 isSearchCommand :: IrcMsg -> Bool
-isSearchCommand (PubMsg _ _ _ msg) = (msg =~ "^!define [a-zA-Z-]+$") :: Bool
+isSearchCommand (PubMsg _ _ _ msg) = (msg =~ "^!d(efine)? [a-zA-Z-]+$") :: Bool
 isSearchCommand _ = False
 
 searchHandler :: Handle -> IrcMsg -> SocketHandler -> IO ()
 searchHandler h (PubMsg msgType _ c msg) cb = do
-  let word = drop 8 msg
+  let reg = mkRegex "^!d(efine)? ([a-zA-Z-]+)$"
+  case (matchRegex reg msg) of
+    Just [_, word] -> sendWordResponse (sendCmd h msgType) c word >> cb
+    Nothing -> cb
+
+sendWordResponse :: ([String] -> IO ()) -> Channel -> String -> IO ()
+sendWordResponse cmd c word = do
   definition <- lookupWord word
   let response = case definition of
                     Just def -> word ++ ": " ++ def
                     Nothing  -> "Error: Invalid response"
-  sendCmd h msgType [channelToString c, response]
-  cb
-searchHandler _ _ cb = cb
+  cmd [channelToString c, response]
 
 searchCommand = (isSearchCommand, searchHandler)
 
