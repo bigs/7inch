@@ -11,7 +11,7 @@ import System.Random
 
 --PubMsg Command IrcUser Channel String
 isCapsQuotes :: IrcMsg -> Bool
-isCapsQuotes (PubMsg PRIVMSG _ _ msg) = msg =~ "[A-Z\\W]+" :: Bool
+isCapsQuotes (PubMsg PRIVMSG _ _ msg) = msg =~ "^[^a-z]*[A-Z]+[^a-z]*$" :: Bool
 isCapsQuotes _ = False
 
 capsQuotesHandler :: TVar [String] -> Handle -> IrcMsg -> SocketHandler -> IO ()

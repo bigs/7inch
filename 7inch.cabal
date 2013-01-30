@@ -20,7 +20,7 @@ library
   exposed-modules:     Network.IRC.SevenInch
   build-depends:       parsec ==3.1.2
   build-depends:       regex-posix
-  build-depends:       network
+  build-depends:       network ==2.3.0.13
 
 executable 7inch
   hs-source-dirs:      src
@@ -28,10 +28,15 @@ executable 7inch
   main-is:             Main.hs
   -- other-modules:       
   build-depends:       base ==4.5.*
-  build-depends:       network
+  build-depends:       network ==2.3.0.13
   build-depends:       unix
   build-depends:       7inch
   build-depends:       mtl
   build-depends:       stm
   build-depends:       regex-posix
   build-depends:       random
+  build-depends:       aeson
+  build-depends:       attoparsec
+  build-depends:       bytestring
+  build-depends:       HTTP
+  build-depends:       text
