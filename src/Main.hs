@@ -11,7 +11,7 @@ import Modules.Search
 
 -- Config stuff
 channels = ["#room", "#test"]
-botNick = ["clbt"]
+botNick = ["clbtz"]
 botUser = ["clbt", "clbt", "clbt", "clbt"]
 server = "irc.faceroar.com"
 port = "6667"
@@ -20,7 +20,6 @@ commands = [echoCommand, quitCommand, autoVoiceCommand, searchCommand]
   
 main :: IO ()
 main = do
-  putStrLn $ "Connecting to " ++ server ++ ":" ++ port
   h <- initSocket server port
   initializeIrc h (botNick, botUser) channels commands
 
