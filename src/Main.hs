@@ -1,13 +1,9 @@
 module Main where
 
-import Text.Parsers.IRC
 import Network.Socket
 import Network.BSD
 import System.IO
 import System.Environment
-import System.Posix.Process
-import Data.List (isPrefixOf)
-import Text.Regex.Posix
 import Network.IRC.SevenInch
 import Modules.Default
 import Modules.CapsQuotes
