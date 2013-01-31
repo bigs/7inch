@@ -4,9 +4,6 @@ import Text.Parsers.IRC
 import Network.Socket
 import Network.BSD
 import System.IO
-import System.Environment
-import Control.Concurrent
-import Data.List (isPrefixOf)
 import Text.Regex.Posix
 
 -- Types
