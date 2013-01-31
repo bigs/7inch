@@ -57,7 +57,7 @@ dispatchCommand h (c:cs) msg cb = do
 socketHandler :: Handle -> [MsgHandler] -> IO ()
 socketHandler h commands = do
   dead <- hIsEOF h
-  if dead then putStrLn "Quitting..." else do
+  if dead then hClose h else do
     line <- hGetLine h
     let stripped = take (length line - 1) line
     let msg = parseIrcMsg stripped
@@ -76,7 +76,7 @@ initializeIrc h (nick, user) chans commands = do
 waitForReady :: Handle -> [String] -> [MsgHandler] -> IO ()
 waitForReady h chans commands = do
   dead <- hIsEOF h
-  if dead then putStrLn "Quitting..." else do
+  if dead then hClose h else do
     line <- hGetLine h
     let stripped = take (length line - 1) line
     let msg = parseIrcMsg stripped
