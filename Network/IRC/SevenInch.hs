@@ -42,16 +42,17 @@ respondToPing :: Handle -> String -> IO ()
 respondToPing h msg = sendCmd h PONG [msg] 
 
 selectHandler :: IrcMsg ->
-                 [MsgHandler] ->
+                 MsgHandler ->
                  Maybe (Handle -> IrcMsg -> SocketHandler -> IO ())
-selectHandler _ [] = Nothing
-selectHandler msg ((f, g):xs) = if f msg then Just g else selectHandler msg xs
+selectHandler msg (f, g) = if f msg then Just g else Nothing
 
-dispatchCommand :: Handle -> [MsgHandler] -> IrcMsg -> IO ()
-dispatchCommand h commands msg = do
-  case selectHandler msg commands of
-    Nothing -> socketHandler h commands
-    Just handler -> handler h msg $ socketHandler h commands
+dispatchCommand :: Handle -> [MsgHandler] -> IrcMsg -> SocketHandler -> IO ()
+dispatchCommand _ [] _ cb = cb
+dispatchCommand h (c:cs) msg cb = do
+  case selectHandler msg c of
+    Just handler -> handler h msg recurse
+    Nothing -> recurse
+  where recurse = dispatchCommand h cs msg cb
 
 socketHandler :: Handle -> [MsgHandler] -> IO ()
 socketHandler h commands = do
@@ -63,7 +64,7 @@ socketHandler h commands = do
     case msg of
       Left e -> putStrLn (show e) >> putStrLn stripped >> recurse
       Right (PingMsg ping) -> respondToPing h ping >> recurse
-      Right ircMsg -> dispatchCommand h commands ircMsg
+      Right ircMsg -> dispatchCommand h commands ircMsg recurse
   where recurse = socketHandler h commands
 
 initializeIrc :: Handle -> ([String], [String]) -> [String] -> [MsgHandler] -> IO ()
