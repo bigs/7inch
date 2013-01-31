@@ -40,7 +40,8 @@ data IrcMsg =
   ServerModeMsg String Channel String |
   KickMsg IrcUser Channel String String |
   TopicMsg IrcUser Channel String |
-  QuitMsg IrcUser String
+  QuitMsg IrcUser String |
+  NickMsg IrcUser String
   deriving (Show)
 
 commandToString :: Command -> [String] -> String
@@ -108,6 +109,16 @@ toFromMsgPub command = try $ do
   char ':'
   msg <- many anyChar
   return $ PubMsg command from to msg
+
+nickMsg :: Parser IrcMsg
+nickMsg = try $ do
+  char ':'
+  user <- userString
+  commandString NICK
+  space
+  char ':'
+  nick <- many anyChar
+  return $ NickMsg user nick
 
 quitMsg :: Parser IrcMsg
 quitMsg = try $ do
@@ -241,6 +252,7 @@ ircStmt = toFromMsgPriv PRIVMSG <|>
           kickMsg <|>
           topicMsg <|>
           quitMsg <|>
+          nickMsg <|>
           authNotice
 
 parseIrcMsg = parse ircStmt "IRC"
