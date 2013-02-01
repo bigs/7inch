@@ -8,6 +8,7 @@ import Network.IRC.SevenInch
 import Modules.Default
 import Modules.CapsQuotes
 import Modules.Search
+import Modules.Topic
 
 -- Config stuff
 channels = ["#room", "#test"]
@@ -21,5 +22,7 @@ commands = [echoCommand, quitCommand, autoVoiceCommand, searchCommand]
 main :: IO ()
 main = do
   h <- initSocket server port
-  initializeIrc h (botNick, botUser) channels commands
+  topicCommand <- initializeTopicChange
+  let _commands = topicCommand : commands
+  initializeIrc h (botNick, botUser) channels _commands
 

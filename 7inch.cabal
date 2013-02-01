@@ -41,3 +41,4 @@ executable 7inch
   build-depends:       bytestring
   build-depends:       HTTP
   build-depends:       text
+  build-depends:       containers

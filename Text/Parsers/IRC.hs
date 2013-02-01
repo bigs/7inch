@@ -19,7 +19,7 @@ data Command = PRIVMSG |
 
 -- Irc User struct   : Nick   Ident  Host
 data IrcUser = IrcUser String String String deriving (Show, Eq)
-data Channel = Channel String deriving (Show, Eq)
+data Channel = Channel String deriving (Show, Eq, Ord)
 
 userToString :: IrcUser -> String
 userToString (IrcUser n i h) = n ++ "!" ++ i ++ "@" ++ h
