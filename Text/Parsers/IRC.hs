@@ -29,6 +29,7 @@ channelToString (Channel c) = "#" ++ c
 
 data IrcMsg =
   PrivMsg Command IrcUser IrcUser String |
+  UserPrivMsg Command IrcUser String String |
   PubMsg Command IrcUser Channel String |
   JoinPartMsg Command IrcUser Channel |
   ServerMsg String Int String String |
@@ -94,10 +95,10 @@ toFromMsgPriv command = try $ do
   from <- userString
   commandString command
   space
-  to <- userString
+  to <- manyTill anyChar (try space)
   char ':'
   msg <- many anyChar
-  return $ PrivMsg command from to msg
+  return $ UserPrivMsg command from to msg
 
 toFromMsgPub :: Command -> Parser IrcMsg
 toFromMsgPub command = try $ do
