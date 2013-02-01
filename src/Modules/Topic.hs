@@ -13,16 +13,13 @@ isTopicChange :: IrcMsg -> Bool
 isTopicChange (TopicMsg _ _ _) = True
 isTopicChange _ = False
 
-topicSwapResponse :: MVar (M.Map Channel String) ->
-                     M.Map Channel String ->
-                     Handle ->
-                     (Channel, String, String) ->
-                     IO ()
+topicSwap :: Channel ->
+             String ->
+             M.Map Channel String ->
+             IO (M.Map Channel String, Maybe String)
 
-topicSwapResponse topicMapRef topicMap h (chan, oldTopic, newTopic) = do
-  putMVar topicMapRef $ M.insert chan newTopic topicMap
-  let msg = "Topic was: " ++ oldTopic
-  sendCmd h PRIVMSG [channelToString chan, msg]
+topicSwap chan newTopic topicMap = do
+  return (M.insert chan newTopic topicMap, M.lookup chan topicMap)
 
 topicChangeHandler :: MVar (M.Map Channel String) ->
                       Handle ->
@@ -31,10 +28,10 @@ topicChangeHandler :: MVar (M.Map Channel String) ->
                       IO ()
 
 topicChangeHandler topicMapRef h (TopicMsg (IrcUser nick _ _) chan newTopic) cb = do
-  topicMap <- takeMVar topicMapRef
-  case M.lookup chan topicMap of
-    Just oldTopic -> topicSwapResponse topicMapRef topicMap h (chan, oldTopic, newTopic) >> cb
-    Nothing -> putMVar topicMapRef (M.insert chan newTopic topicMap) >> cb
+  oldTopic <- modifyMVar topicMapRef (topicSwap chan newTopic)
+  case oldTopic of
+    Just topic -> sendCmd h PRIVMSG [channelToString chan, "Topic was: " ++ topic] >> cb
+    Nothing -> cb
 
 initializeTopicChange :: IO (MsgHandler)
 initializeTopicChange = do
