@@ -15,6 +15,7 @@ data Command = PRIVMSG |
                ERROR |
                KICK |
                QUIT |
+               INVITE |
                MODE deriving (Show, Eq)
 
 -- Irc User struct   : Nick   Ident  Host
@@ -42,6 +43,7 @@ data IrcMsg =
   KickMsg IrcUser Channel String String |
   TopicMsg IrcUser Channel String |
   QuitMsg IrcUser String |
+  InviteMsg IrcUser String Channel |
   NickMsg IrcUser String
   deriving (Show)
 
@@ -60,6 +62,7 @@ commandToString QUIT [msg] = "QUIT :" ++ msg
 commandToString QUIT [] = "QUIT"
 commandToString KICK [room, user, reason] = "KICK " ++ room ++ " " ++ user ++ " :" ++ reason
 commandToString MODE (room:mode:users) = "MODE " ++ room ++ " " ++ mode ++ " " ++ intercalate " " users
+commandToString INVITE [user, room] = "INVITE " ++ user ++ " " ++ room
 commandToString _ _ = ""
 
 commandString :: Command -> Parser Command
@@ -142,6 +145,17 @@ kickMsg = try $ do
   char ':'
   msg <- many anyChar
   return $ KickMsg user chan kicked msg
+
+inviteMsg :: Parser IrcMsg
+inviteMsg = try $ do
+  char ':'
+  user <- userString
+  commandString INVITE
+  space
+  invitee <- manyTill anyChar $ try space
+  char ':'
+  chan <- channelString
+  return $ InviteMsg user invitee chan
 
 topicMsg :: Parser IrcMsg
 topicMsg = try $ do
@@ -254,6 +268,7 @@ ircStmt = toFromMsgPriv PRIVMSG <|>
           topicMsg <|>
           quitMsg <|>
           nickMsg <|>
+          inviteMsg <|>
           authNotice
 
 parseIrcMsg = parse ircStmt "IRC"
