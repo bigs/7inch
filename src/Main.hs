@@ -9,20 +9,21 @@ import Modules.Default
 import Modules.CapsQuotes
 import Modules.Search
 import Modules.Topic
+import Modules.Invite
 
 -- Config stuff
 channels = ["#room", "#test"]
-botNick = ["clbtz"]
+botNick = ["clbt"]
 botUser = ["clbt", "clbt", "clbt", "clbt"]
 server = "irc.faceroar.com"
 port = "6667"
 
-commands = [echoCommand, quitCommand, autoVoiceCommand, searchCommand]
+commands = [echoCommand, quitCommand, autoVoiceCommand, searchCommand, inviteCommand]
   
 main :: IO ()
 main = do
   h <- initSocket server port
   topicCommand <- initializeTopicChange
-  let _commands = topicCommand : commands
+  let _commands = topicCommand : zommands
   initializeIrc h (botNick, botUser) channels _commands
 
