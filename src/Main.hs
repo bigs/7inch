@@ -24,6 +24,6 @@ main :: IO ()
 main = do
   h <- initSocket server port
   topicCommand <- initializeTopicChange
-  let _commands = topicCommand : zommands
+  let _commands = topicCommand : commands
   initializeIrc h (botNick, botUser) channels _commands
 
