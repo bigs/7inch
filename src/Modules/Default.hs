@@ -12,12 +12,10 @@ echoHandler h (PubMsg c _ channel msg) cb = do
   let line = drop 6 msg
   sendCmd h PRIVMSG [channelToString channel, line]
   cb
-echoHandler h _ cb = cb
 
 isMsgMatchingRegex :: String -> IrcMsg -> Bool
 isMsgMatchingRegex regex (PubMsg _ _ _ msg) = msg =~ regex :: Bool
 isMsgMatchingRegex regex (PrivMsg _ _ _ msg) = msg =~ regex :: Bool
-isMsgMatchingRegex regex (UserPrivMsg _ _ _ msg) = msg =~ regex :: Bool
 isMsgMatchingRegex _ _ = False
 
 isEcho = isMsgMatchingRegex "^!echo .+"
