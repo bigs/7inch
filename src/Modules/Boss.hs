@@ -9,7 +9,7 @@ import System.IO
 import System.Random
 
 isBoss :: IrcMsg -> Bool
-isBoss (PubMsg PRIVMSG _ _ msg) = msg =~ "^[a-zA-Z\-.]+$"
+isBoss (PubMsg PRIVMSG _ _ msg) = msg =~ "^[a-zA-Z\-]+$"
 isBoss _ = False
 
 bossHandler :: Handle -> IrcMsg -> SocketHandler -> IO ()
