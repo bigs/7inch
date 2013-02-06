@@ -10,6 +10,7 @@ import Modules.CapsQuotes
 import Modules.Search
 import Modules.Topic
 import Modules.Invite
+import Modules.Boss
 
 -- Config stuff
 channels = ["#room", "#test"]
@@ -18,7 +19,7 @@ botUser = ["clbt", "clbt", "clbt", "clbt"]
 server = "irc.faceroar.com"
 port = "6667"
 
-commands = [echoCommand, quitCommand, autoVoiceCommand, searchCommand, inviteCommand]
+commands = [echoCommand, quitCommand, autoVoiceCommand, searchCommand, inviteCommand, bossCommand]
   
 main :: IO ()
 main = do
