@@ -6,11 +6,13 @@ import Network.Socket
 import Network.BSD
 import Text.Regex.Posix
 import System.IO
+import Control.Concurrent.STM.TChan (TChan)
+import Control.Concurrent.STM (STM, atomically)
 
-echoHandler :: Handle -> IrcMsg -> SocketHandler -> IO ()
-echoHandler h (PubMsg c _ channel msg) cb = do
+echoHandler :: TChan String -> IrcMsg -> SocketHandler -> IO ()
+echoHandler chan (PubMsg c _ channel msg) cb = do
   let line = drop 6 msg
-  sendCmd h PRIVMSG [channelToString channel, line]
+  atomically $ sendCmd chan PRIVMSG [channelToString channel, line]
   cb
 
 isMsgMatchingRegex :: String -> IrcMsg -> Bool
@@ -21,9 +23,9 @@ isMsgMatchingRegex _ _ = False
 isEcho = isMsgMatchingRegex "^!echo .+"
 isQuit = isMsgMatchingRegex "^!quit"
 
-quitHandler :: Handle -> IrcMsg -> SocketHandler -> IO ()
-quitHandler h _ cb = do
-  sendCmd h QUIT []
+quitHandler :: TChan String -> IrcMsg -> SocketHandler -> IO ()
+quitHandler chan _ cb = do
+  atomically $ sendCmd chan QUIT []
   cb
 
 echoCommand = (isEcho, echoHandler)
@@ -33,10 +35,10 @@ isAutoVoice :: IrcMsg -> Bool
 isAutoVoice (JoinPartMsg JOIN _ _) = True
 isAutoVoice _ = False
 
-autoVoiceHandler :: Handle -> IrcMsg -> SocketHandler -> IO ()
-autoVoiceHandler h (JoinPartMsg _ (IrcUser nick _ _) room) cb = do
+autoVoiceHandler :: TChan String -> IrcMsg -> SocketHandler -> IO ()
+autoVoiceHandler chan (JoinPartMsg _ (IrcUser nick _ _) room) cb = do
   let roomStr = channelToString room
-  sendCmd h MODE [roomStr, "+v", nick]
+  atomically $ sendCmd chan MODE [roomStr, "+v", nick]
   cb
 
 autoVoiceCommand = (isAutoVoice, autoVoiceHandler)

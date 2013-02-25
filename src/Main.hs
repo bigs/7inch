@@ -13,8 +13,8 @@ import Modules.Invite
 import Modules.Boss
 
 -- Config stuff
-channels = ["#room", "#test"]
-botNick = ["clbt"]
+channels = ["#game"]
+botNick = ["clbz"]
 botUser = ["clbt", "clbt", "clbt", "clbt"]
 server = "irc.faceroar.com"
 port = "6667"

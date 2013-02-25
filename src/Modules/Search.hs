@@ -10,6 +10,8 @@ import Data.Attoparsec hiding (try)
 import System.Environment (getEnv)
 import Control.Exception (try)
 import System.IO.Error hiding (try)
+import Control.Concurrent.STM.TChan (TChan)
+import Control.Concurrent.STM (atomically)
 
 import Text.Parsers.IRC
 import Network.IRC.SevenInch
@@ -97,11 +99,11 @@ isSearchCommand :: IrcMsg -> Bool
 isSearchCommand (PubMsg _ _ _ msg) = (msg =~ "^!d(efine)? [a-zA-Z-]+$") :: Bool
 isSearchCommand _ = False
 
-searchHandler :: Handle -> IrcMsg -> SocketHandler -> IO ()
-searchHandler h (PubMsg msgType _ c msg) cb = do
+searchHandler :: TChan String -> IrcMsg -> SocketHandler -> IO ()
+searchHandler chan (PubMsg msgType _ c msg) cb = do
   let reg = mkRegex "^!d(efine)? ([a-zA-Z-]+)$"
   case (matchRegex reg msg) of
-    Just [_, word] -> sendWordResponse (sendCmd h msgType) c word >> cb
+    Just [_, word] -> sendWordResponse (atomically . sendCmd chan msgType) c word >> cb
     Nothing -> cb
 
 sendWordResponse :: ([String] -> IO ()) -> Channel -> String -> IO ()
