@@ -5,11 +5,16 @@ import Network.Socket
 import Network.BSD
 import System.IO
 import Text.Regex.Posix
+import Control.Concurrent.STM.TChan
+import Control.Concurrent.STM
+import Control.Monad (forever)
+import Control.Concurrent
 
 -- Types
 -- ========================
 -- 
-type MsgHandler = ((IrcMsg -> Bool), (Handle -> IrcMsg -> SocketHandler -> IO ()))
+type MsgHandler = ((IrcMsg -> Bool), (TChan String -> IrcMsg -> SocketHandler -> IO ()))
+type CommandWriter = Command -> [String] -> STM ()
 
 type SocketHandler = IO ()
 
@@ -28,31 +33,36 @@ initSocket server port = do
   return h
 
 -- Sends a command
-sendCmd :: Handle -> Command -> [String] -> IO ()
-sendCmd h c args = do
+sendCmd :: TChan String -> Command -> [String] -> STM ()
+sendCmd chan c args = do
   let cmdStr = commandToString c args
-  hPutStr h $ cmdStr ++ "\r\n"
+  writeTChan chan $ cmdStr ++ "\r\n"
+
+writeLoop :: Handle -> TChan String -> IO ()
+writeLoop h chan = forever $ do
+  msg <- atomically $ readTChan chan
+  hPutStr h msg
   hFlush h
 
 -- Ping handler
-respondToPing :: Handle -> String -> IO ()
-respondToPing h msg = sendCmd h PONG [msg] 
+respondToPing :: TChan String -> String -> IO ()
+respondToPing chan msg = atomically $ sendCmd chan PONG [msg] 
 
 selectHandler :: IrcMsg ->
                  MsgHandler ->
-                 Maybe (Handle -> IrcMsg -> SocketHandler -> IO ())
+                 Maybe (TChan String -> IrcMsg -> SocketHandler -> IO ())
 selectHandler msg (f, g) = if f msg then Just g else Nothing
 
-dispatchCommand :: Handle -> [MsgHandler] -> IrcMsg -> SocketHandler -> IO ()
+dispatchCommand :: TChan String -> [MsgHandler] -> IrcMsg -> SocketHandler -> IO ()
 dispatchCommand _ [] _ cb = cb
-dispatchCommand h (c:cs) msg cb = do
+dispatchCommand chan (c:cs) msg cb = do
   case selectHandler msg c of
-    Just handler -> handler h msg recurse
+    Just handler -> handler chan msg recurse
     Nothing -> recurse
-  where recurse = dispatchCommand h cs msg cb
+  where recurse = dispatchCommand chan cs msg cb
 
-socketHandler :: Handle -> [MsgHandler] -> IO ()
-socketHandler h commands = do
+socketHandler :: Handle -> TChan String -> [MsgHandler] -> IO ()
+socketHandler h chan commands = do
   dead <- hIsEOF h
   if dead then hClose h else do
     line <- hGetLine h
@@ -60,25 +70,31 @@ socketHandler h commands = do
     let msg = parseIrcMsg stripped
     case msg of
       Left e -> putStrLn (show e) >> putStrLn stripped >> recurse
-      Right (PingMsg ping) -> respondToPing h ping >> recurse
-      Right ircMsg -> dispatchCommand h commands ircMsg recurse
-  where recurse = socketHandler h commands
+      Right (PingMsg ping) -> respondToPing chan ping >> recurse
+      Right ircMsg -> dispatchCommand chan commands ircMsg recurse
+  where recurse = socketHandler h chan commands
 
 initializeIrc :: Handle -> ([String], [String]) -> [String] -> [MsgHandler] -> IO ()
 initializeIrc h (nick, user) chans commands = do
-  sendCmd h NICK nick
-  sendCmd h USER user
-  waitForReady h chans commands
+  chan <- atomically $ newTChan :: IO (TChan String)
+  threadId <- forkIO $ writeLoop h chan
+  atomically $ sendCmd chan NICK nick
+  atomically $ sendCmd chan USER user
+  waitForReady h chan chans commands
 
-waitForReady :: Handle -> [String] -> [MsgHandler] -> IO ()
-waitForReady h chans commands = do
+initializeReadyIrc :: Handle -> TChan String -> [String] -> [MsgHandler] -> IO ()
+initializeReadyIrc h chan channels commands = do
+  atomically $ sendCmd chan JOIN channels
+  socketHandler h chan commands
+
+waitForReady :: Handle -> TChan String -> [String] -> [MsgHandler] -> IO ()
+waitForReady h chan chans commands = do
   dead <- hIsEOF h
   if dead then hClose h else do
     line <- hGetLine h
     let stripped = take (length line - 1) line
     let msg = parseIrcMsg stripped
     case msg of
-      Right (ServerMsg _ 255 _ _) -> joinChans >> socketHandler h commands
-      _ -> waitForReady h chans commands
-  where joinChans = sendCmd h JOIN chans
+      Right (ServerMsg _ 255 _ _) -> initializeReadyIrc h chan chans commands
+      _ -> waitForReady h chan chans commands
 
