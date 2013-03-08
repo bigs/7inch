@@ -109,7 +109,7 @@ sendWordResponse cmd c word = do
   definition <- lookupWord word
   let response = case definition of
                     Just def -> word ++ ": " ++ def
-                    Nothing  -> "Error: Invalid response"
+                    Nothing  -> "Error: That's not a word"
   cmd [channelToString c, response]
 
 searchCommand = (isSearchCommand, searchHandler)
