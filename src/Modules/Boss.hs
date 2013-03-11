@@ -18,7 +18,7 @@ bossHandler :: TChan String -> IrcMsg -> SocketHandler -> IO ()
 bossHandler chan (PubMsg _ _ c msg) cb = do
   let response = msg ++ ", boss"
   r <- getStdRandom (randomR (0 :: Integer, 1000 :: Integer))
-  if r < 100
+  if r < 40
     then atomically (sendCmd chan PRIVMSG [channelToString c, response]) >> cb
     else cb
 
