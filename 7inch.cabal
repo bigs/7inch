@@ -20,6 +20,7 @@ library
   exposed-modules:     Network.IRC.SevenInch
   build-depends:       parsec ==3.1.2
   build-depends:       regex-posix
+  build-depends:       stm
   build-depends:       network ==2.3.0.13
 
 executable 7inch

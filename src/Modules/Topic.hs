@@ -7,6 +7,8 @@ import Network.BSD
 import Text.Regex.Posix
 import System.IO
 import Control.Concurrent.MVar
+import Control.Concurrent.STM (atomically)
+import Control.Concurrent.STM.TChan (TChan)
 import qualified Data.Map as M
 
 isTopicChange :: IrcMsg -> Bool
@@ -22,15 +24,15 @@ topicSwap chan newTopic topicMap = do
   return (M.insert chan newTopic topicMap, M.lookup chan topicMap)
 
 topicChangeHandler :: MVar (M.Map Channel String) ->
-                      Handle ->
+                      TChan String ->
                       IrcMsg ->
                       SocketHandler ->
                       IO ()
 
-topicChangeHandler topicMapRef h (TopicMsg (IrcUser nick _ _) chan newTopic) cb = do
-  oldTopic <- modifyMVar topicMapRef (topicSwap chan newTopic)
+topicChangeHandler topicMapRef chan (TopicMsg (IrcUser nick _ _) channel newTopic) cb = do
+  oldTopic <- modifyMVar topicMapRef (topicSwap channel newTopic)
   case oldTopic of
-    Just topic -> sendCmd h PRIVMSG [channelToString chan, "Topic was: " ++ topic] >> cb
+    Just topic -> atomically (sendCmd chan PRIVMSG [channelToString channel, "Topic was: " ++ topic]) >> cb
     Nothing -> cb
 
 initializeTopicChange :: IO (MsgHandler)
